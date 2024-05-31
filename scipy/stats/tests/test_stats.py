@@ -2979,6 +2979,40 @@ class TestZmapZscore:
         assert_equal(res[1:], np.nan)
         res = stats.zscore(y, axis=None)
         assert_equal(res[1:], np.nan)
+    
+    @skip_xp_invalid_arg
+    def test_modifiedzscore_empty_input(self, x):
+        z = stats.modifiedzscore()
+        assert_equal(z, x)
+
+    @skip_xp_invalid_arg
+    def test_modifiedzscore_normal_array(self, x):
+        a = [2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, 8.2, 8.3]
+        desired = ([-1.57383333, 0.6745, -0.22483333, 0.22483333, 
+                    -0.6745, -1.57383333, -0.6745, 0.6745, 
+                    25.85583333, 26.3055])
+        z = stats.modifiedzscore(a)
+        assert_allclose(desired, z)
+    
+    @skip_xp_invalid_arg
+    def test_modifiedzscore_nan_policy_omit(self, x):
+        a = [2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, np.nan, 8.3]
+        desired = ([-1.01175, 0.6745 ,  0.0, 0.33725, -0.33725, 
+                    -1.01175, -0.33725, 0.6745 , np.nan, 19.89775])
+        z = stats.modifiedzscore(a, nan_policy='omit')
+        assert_allclose(desired, z)
+    
+    @skip_xp_invalid_arg
+    def test_modifiedzscore_nan_policy_propagate(self, x):
+        a = [2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, np.nan, 8.3]
+        z = stats.modifiedzscore(a)
+        assert all(np.isnan(z))
+
+    @skip_xp_invalid_arg
+    def test_modifiedzscore_nan_policy_raise(self):
+        a = [2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, np.nan, 8.3]
+        assert_raises(ValueError, stats.modifiedzscore, a, nan_policy='raise')
+
 
 class TestMedianAbsDeviation:
     def setup_class(self):

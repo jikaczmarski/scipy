@@ -80,7 +80,7 @@ __all__ = ['find_repeats', 'gmean', 'hmean', 'pmean', 'mode', 'tmean', 'tvar',
            'normaltest', 'jarque_bera',
            'scoreatpercentile', 'percentileofscore',
            'cumfreq', 'relfreq', 'obrientransform',
-           'sem', 'zmap', 'zscore', 'gzscore', 'iqr', 'gstd',
+           'sem', 'zmap', 'zscore', 'gzscore', 'modifiedzscore', 'iqr', 'gstd',
            'median_abs_deviation',
            'sigmaclip', 'trimboth', 'trim1', 'trim_mean',
            'f_oneway', 'pearsonr', 'fisher_exact',
@@ -3083,6 +3083,89 @@ def gzscore(a, *, axis=0, ddof=0, nan_policy='propagate'):
     log = ma.log if isinstance(a, ma.MaskedArray) else np.log
 
     return zscore(log(a), axis=axis, ddof=ddof, nan_policy=nan_policy)
+
+
+def modifiedzscore(scores, nan_policy='propagate'):
+    """
+    Calculate modified z-scores.
+
+    Return an array of modified z-scores, i.e., scores that are
+    standardized to the sample median and median absolute deviation.
+
+    Parameters
+    ----------
+    scores : array_like
+        The input for which the modified z-scores are calculated.
+    nan_policy : {'propagate', 'raise', 'omit'}, optional
+        Defines how to handle when input contains nan. 'propagate'
+        returns nan, 'raise' throws an error, 'omit' performs the
+        calculations ignoring nan values. Default is 'propagate'.
+        Note that when the value is 'omit', nans in the input also
+        propagate to the output, but they do not affect the modified
+        z scores computed for the non-nan values.
+
+    Returns
+    -------
+    modifiedzscore : array_like
+        Modified Z-scores, in the same shape as `scores`.
+
+    See Also
+    ---
+    numpy.median : Sample median
+    numpy.nanmedian : Sample median ignoring nan values
+    scipy.stats.zscore : Standard score
+    scipy.stats.gzscore : Geometric standard score
+
+    Notes
+    -----
+    This approach to Z-scores uses a robust measure of central tendency
+    that is resistent to extreme outliers. The traditional Z-score uses
+    sample means, which easily skewed by a few large outliers
+    - especially with smaller sample sizes. The authors of the method,
+    Iglewicz and Hoaglin (1993), recommend labeling oberservations as
+    outliers when the absolute value of the score is greater than 3.5.
+
+    References
+    ---
+    .. [1] Iglewicz, Boris, and David C. Hoaglin. 1993. How to Detect
+    and Handle Outliers. ASQC Basic References in Quality Control, 
+    v. 16. Milwaukee, Wis: ASQC Quality Press. ISBN: 978-0-87389-247-6.
+
+    Examples
+    --------
+    The following example is from the Iglewicz and Hoaglin (1993, p.12)
+
+    >>> from scipy.stats import modifiedzscore
+    >>> a = [2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, 8.2, 8.3]
+    >>> modifiedzscore(a)
+    array([-1.57383333, 0.6745, -0.22483333, 0.22483333, -0.6745,
+    ...    -1.57383333, -0.6745, 0.6745, 25.85583333, 26.3055])
+
+    An example with `nan_policy='omit'`,
+
+    >>> a = [2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, np.nan, 8.3]
+    >>> modifiedzscore(a)
+    array([-1.01175, 0.6745 ,  0.0, 0.33725, -0.33725, -1.01175,
+    ...    -0.33725, 0.6745 , nan, 19.89775])
+    """
+
+    a = np.asanyarray(scores)
+
+    if a.size == 0:
+        return np.empty(a.shape)
+    
+    contains_nan, nan_policy = _contains_nan(a, nan_policy)
+
+    if contains_nan and nan_policy == 'omit':
+        md = np.nanmedian(scores, keepdims=True)
+        mad = np.nanmedian(abs(scores - md), keepdims=True)
+
+    else:
+        md = np.median(scores, keepdims=True)
+        mad = np.median(abs(scores - md), keepdims=True)
+    
+    mod_z = (0.6745 * (scores - md)) / mad
+    return mod_z
 
 
 def zmap(scores, compare, axis=0, ddof=0, nan_policy='propagate'):

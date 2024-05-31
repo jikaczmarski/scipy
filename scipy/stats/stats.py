@@ -12,7 +12,7 @@ __all__ = [  # noqa: F822
     'normaltest', 'jarque_bera',
     'scoreatpercentile', 'percentileofscore',
     'cumfreq', 'relfreq', 'obrientransform',
-    'sem', 'zmap', 'zscore', 'gzscore', 'iqr', 'gstd',
+    'sem', 'zmap', 'zscore', 'gzscore', 'modifiedzscore', 'iqr', 'gstd',
     'median_abs_deviation',
     'sigmaclip', 'trimboth', 'trim1', 'trim_mean',
     'f_oneway',
